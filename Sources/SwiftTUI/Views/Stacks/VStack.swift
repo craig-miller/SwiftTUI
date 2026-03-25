@@ -104,25 +104,38 @@ public struct VStack<Content: View>: View, PrimitiveView, LayoutRootView {
         // MARK: - Selection
         
         override func selectableElement(below index: Int) -> Control? {
-            var index = index + 1
-            while index < children.count {
-                if let element = children[index].firstSelectableElement {
+            // Find which selectable index the current element occupies in its row
+            let selectableIdx = currentSelectableIndex(inChildAt: index)
+
+            var idx = index + 1
+            while idx < children.count {
+                if let element = selectableIdx.flatMap({ children[idx].nthSelectableElement($0) })
+                    ?? children[idx].firstSelectableElement {
                     return element
                 }
-                index += 1
+                idx += 1
             }
-            return super.selectableElement(below: index)
+            return super.selectableElement(below: idx)
         }
-        
+
         override func selectableElement(above index: Int) -> Control? {
-            var index = index - 1
-            while index >= 0 {
-                if let element = children[index].firstSelectableElement {
+            let selectableIdx = currentSelectableIndex(inChildAt: index)
+
+            var idx = index - 1
+            while idx >= 0 {
+                if let element = selectableIdx.flatMap({ children[idx].nthSelectableElement($0) })
+                    ?? children[idx].firstSelectableElement {
                     return element
                 }
-                index -= 1
+                idx -= 1
             }
-            return super.selectableElement(above: index)
+            return super.selectableElement(above: idx)
+        }
+
+        private func currentSelectableIndex(inChildAt index: Int) -> Int? {
+            guard index >= 0 && index < children.count,
+                  let firstResponder = root.window?.firstResponder else { return nil }
+            return firstResponder.selectableIndex(within: children[index])
         }
     }
 }

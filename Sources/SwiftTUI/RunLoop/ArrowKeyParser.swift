@@ -11,6 +11,7 @@ struct ArrowKeyParser {
     private var partial: Int = 0
 
     var arrowKey: ArrowKey?
+    var isPartial: Bool { partial > 0 }
 
     mutating func parse(character: Character) -> Bool {
         if partial == 0 && character == "\u{1b}" {

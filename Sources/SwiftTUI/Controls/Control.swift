@@ -114,6 +114,42 @@ class Control: LayerDrawing {
     func selectableElement(rightOf index: Int) -> Control? { parent?.selectableElement(rightOf: self.index) }
     func selectableElement(leftOf index: Int) -> Control? { parent?.selectableElement(leftOf: self.index) }
 
+    /// Returns the Nth selectable element in this subtree (0-indexed).
+    final func nthSelectableElement(_ n: Int) -> Control? {
+        var count = 0
+        return findNthSelectable(n, count: &count)
+    }
+
+    private func findNthSelectable(_ n: Int, count: inout Int) -> Control? {
+        if selectable {
+            if count == n { return self }
+            count += 1
+            return nil
+        }
+        for child in children {
+            if let found = child.findNthSelectable(n, count: &count) { return found }
+        }
+        return nil
+    }
+
+    /// Returns the selectable index of this control within a given ancestor's subtree.
+    final func selectableIndex(within ancestor: Control) -> Int? {
+        var count = 0
+        return ancestor.findSelectableIndex(of: self, count: &count)
+    }
+
+    private func findSelectableIndex(of target: Control, count: inout Int) -> Int? {
+        if selectable {
+            if self === target { return count }
+            count += 1
+            return nil
+        }
+        for child in children {
+            if let found = child.findSelectableIndex(of: target, count: &count) { return found }
+        }
+        return nil
+    }
+
     // MARK: - Scrolling
 
     func scroll(to position: Position) {

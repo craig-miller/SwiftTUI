@@ -13,6 +13,8 @@ public class Application {
 
     private var arrowKeyParser = ArrowKeyParser()
 
+    public var onEscape: (() -> Void)?
+
     private var invalidatedNodes: [Node] = []
     private var updateScheduled = false
 
@@ -100,36 +102,45 @@ public class Application {
             if arrowKeyParser.parse(character: char) {
                 guard let key = arrowKeyParser.arrowKey else { continue }
                 arrowKeyParser.arrowKey = nil
-                if key == .down {
-                    if let next = window.firstResponder?.selectableElement(below: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
-                    }
-                } else if key == .up {
-                    if let next = window.firstResponder?.selectableElement(above: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
-                    }
-                } else if key == .right {
-                    if let next = window.firstResponder?.selectableElement(rightOf: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
-                    }
-                } else if key == .left {
-                    if let next = window.firstResponder?.selectableElement(leftOf: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
-                    }
-                }
+                navigateToKey(key)
             } else if char == ASCII.EOT {
                 stop()
+            } else if let key = vimNavigationKey(char) {
+                navigateToKey(key)
             } else {
                 window.firstResponder?.handleEvent(char)
             }
+        }
+
+        // Bare Esc: parser consumed \u{1b} but no [ followed in this buffer
+        if arrowKeyParser.isPartial {
+            arrowKeyParser = ArrowKeyParser()
+            onEscape?()
+        }
+    }
+
+    private func navigateToKey(_ key: ArrowKeyParser.ArrowKey) {
+        let next: Control?
+        switch key {
+        case .down:  next = window.firstResponder?.selectableElement(below: 0)
+        case .up:    next = window.firstResponder?.selectableElement(above: 0)
+        case .right: next = window.firstResponder?.selectableElement(rightOf: 0)
+        case .left:  next = window.firstResponder?.selectableElement(leftOf: 0)
+        }
+        if let next {
+            window.firstResponder?.resignFirstResponder()
+            window.firstResponder = next
+            window.firstResponder?.becomeFirstResponder()
+        }
+    }
+
+    private func vimNavigationKey(_ char: Character) -> ArrowKeyParser.ArrowKey? {
+        switch char {
+        case "h": return .left
+        case "j": return .down
+        case "k": return .up
+        case "l": return .right
+        default:  return nil
         }
     }
 
