@@ -14,6 +14,9 @@ public class Application {
     private var arrowKeyParser = ArrowKeyParser()
 
     public var onEscape: (() -> Void)?
+    /// Called for characters not consumed by vim navigation or the focused control.
+    /// Return true to consume the key, false to pass to the focused control.
+    public var onKey: ((Character) -> Bool)?
 
     private var invalidatedNodes: [Node] = []
     private var updateScheduled = false
@@ -107,7 +110,7 @@ public class Application {
                 stop()
             } else if let key = vimNavigationKey(char) {
                 navigateToKey(key)
-            } else {
+            } else if onKey?(char) != true {
                 window.firstResponder?.handleEvent(char)
             }
         }
